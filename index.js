@@ -2,6 +2,8 @@ var signal = require('signal-protocol')
 var KeyHelper = signal.KeyHelper;
 const SignalProtocolStore = require('./utils/InMemorySignalProtocolStore')
 const store = new SignalProtocolStore();
+const myStore = {};
+const v4 = require('uuid').v4;
 
 const generateIdentityKeyPair = () => {
   return new Promise((resolve, reject) => {
@@ -28,15 +30,46 @@ const generateSignedPreKey = (identityKeyPair, registrationId) => {
   })
 }
 
-const init = async() => {
-  var registrationId = KeyHelper.generateRegistrationId();
-  const identityKeyPair = await generateIdentityKeyPair(registrationId)
+const registerClient = async() => {
+  const deviceId = v4();
+  const registrationId = KeyHelper.generateRegistrationId();
+  const identityKeyPair = await generateIdentityKeyPair(registrationId);
   const preKey = await generatePreKey(registrationId);
   store.storePreKey(preKey.registrationId, preKey.keyPair);
-  console.log('preKey', preKey)
   const signedPreKey = await generateSignedPreKey(identityKeyPair, registrationId);
   store.storeSignedPreKey(signedPreKey.keyId, signedPreKey.keyPair);
-  console.log('signedPreKey', signedPreKey)
+  myStore[`${deviceId}-${registrationId}`] = {
+    deviceId,
+    registrationId,
+    identityKeyPair,
+    preKey,
+    signedPreKey,
+  };
+  return {
+    deviceId,
+    registrationId
+  };
 }
 
+
+const init = async () => {
+
+  const user1 = await registerClient();
+  const user2 = await registerClient();
+
+  console.log({
+    user1,
+    user2,
+    myStore,
+  });
+
+}
+
+
+
+
 init();
+
+
+
+
