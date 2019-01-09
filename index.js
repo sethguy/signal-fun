@@ -5,27 +5,21 @@ const store = new SignalProtocolStore();
 const myStore = {};
 const v4 = require('uuid').v4;
 
-const generateIdentityKeyPair = () => {
-  return new Promise((resolve, reject) => {
-    KeyHelper.generateIdentityKeyPair().then(function(identityKeyPair) {
-      resolve(identityKeyPair)
-    });
+const generateIdentityKeyPair = () => new Promise((resolve, reject) => {
+  KeyHelper.generateIdentityKeyPair().then(function(identityKeyPair) {
+    resolve(identityKeyPair)
   });
-}
-const generatePreKey = (registrationId) => {
-  return new Promise((resolve, reject) => {
-    KeyHelper.generatePreKey(registrationId).then(function(preKey) {
-      resolve(preKey)
-    });
-  })
-}
-const generateSignedPreKey = (identityKeyPair, registrationId) => {
-  return new Promise((resolve, reject) => {
-    KeyHelper.generateSignedPreKey(identityKeyPair, registrationId).then(function(signedPreKey) {
-      resolve(signedPreKey)
-    });
+});
+const generatePreKey = (registrationId) => new Promise((resolve, reject) => {
+  KeyHelper.generatePreKey(registrationId).then(function(preKey) {
+    resolve(preKey)
   });
-}
+})
+const generateSignedPreKey = (identityKeyPair, registrationId) => new Promise((resolve, reject) => {
+  KeyHelper.generateSignedPreKey(identityKeyPair, registrationId).then(function(signedPreKey) {
+    resolve(signedPreKey)
+  });
+});
 const registerClient = async() => {
   const deviceId = v4();
   const registrationId = KeyHelper.generateRegistrationId();
@@ -55,6 +49,5 @@ const init = async () => {
     myStore,
   });
 }
-
 
 init();
