@@ -1,3 +1,5 @@
+var signal = require('signal-protocol')
+
 function SignalProtocolStore() {
   this.store = {};
 }
@@ -55,8 +57,7 @@ SignalProtocolStore.prototype = {
   saveIdentity: function(identifier, identityKey) {
     if (identifier === null || identifier === undefined)
       throw new Error("Tried to put identity key for undefined/null key");
-
-    var address = new libsignal.SignalProtocolAddress.fromString(identifier);
+    var address = new signal.SignalProtocolAddress.fromString(identifier);
 
     var existing = this.get('identityKey' + address.getName());
     this.put('identityKey' + address.getName(), identityKey)

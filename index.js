@@ -1,7 +1,11 @@
 var signal = require('signal-protocol')
+var dcodeIO = require('./node_modules/signal-protocol/build/dcodeIO.js');
+
 var KeyHelper = signal.KeyHelper;
 const SignalProtocolStore = require('./utils/InMemorySignalProtocolStore')
 const store = new SignalProtocolStore();
+const store2 = new SignalProtocolStore();
+
 const myStore = {};
 const v4 = require('uuid').v4;
 
@@ -22,21 +26,34 @@ const generateSignedPreKey = (identityKeyPair, registrationId) => new Promise((r
 });
 const encryptMsg = async({msg, store, address}) => {
   var sessionCipher = new signal.SessionCipher(store, address);
-  const ciphertext = sessionCipher.encrypt(msg)
+  const ciphertext = sessionCipher.encrypt(msg, 'uint32')
   return ciphertext;
 }
-const registerClient = async() => {
-  const deviceId = v4();
+const str2ab = (str) => {
+  var buf = new ArrayBuffer(str.length * 2); // 2 bytes for each char
+  var bufView = new Uint32Array(buf);
+  for (var i = 0, strLen = str.length; i < strLen; i++) {
+    bufView[i] = str.charCodeAt(i);
+  }
+  return buf;
+}
+const registerClient = async(store) => {
+  const deviceId = 1;
   const registrationId = KeyHelper.generateRegistrationId();
-  const identityKeyPair = await generateIdentityKeyPair(registrationId);
+  const identityKeyPair = await generateIdentityKeyPair();
+  store.put('identityKey', identityKeyPair);
+
   const preKey = await generatePreKey(registrationId);
-  store.storePreKey(preKey.registrationId, preKey.keyPair);
+  store.storePreKey(preKey.keyId, preKey.keyPair);
   const signedPreKey = await generateSignedPreKey(identityKeyPair, registrationId);
   // console.log({
   //   signedPreKey
   // })
 
   store.storeSignedPreKey(signedPreKey.keyId, signedPreKey.keyPair);
+
+
+
   myStore[`${deviceId}-${registrationId}`] = {
     deviceId,
     registrationId,
@@ -45,14 +62,17 @@ const registerClient = async() => {
     preKey,
     signedPreKey,
   };
+
+
+
   return {
     deviceId,
     registrationId
   };
 };
 const init = async () => {
-  const user1Id = await registerClient();
-  const user2Id = await registerClient();
+  const user1Id = await registerClient(store);
+  const user2Id = await registerClient(store2);
   const user1 = myStore[`${user1Id.deviceId}-${user1Id.registrationId}`]
   const user2 = myStore[`${user2Id.deviceId}-${user2Id.registrationId}`]
   console.log({
@@ -60,15 +80,15 @@ const init = async () => {
     user2,
     myStore,
   });
-  var user1Address = new signal.SignalProtocolAddress(user1.registrationId, user1.deviceId);
+  var user1Address = new signal.SignalProtocolAddress('33.1', user1.deviceId);
 
-  var user2Address = new signal.SignalProtocolAddress(user2.registrationId, user2.deviceId);
+  var user2Address = new signal.SignalProtocolAddress('44.1', user2.deviceId);
 
   //
 
   var user1ToUser2Session = new signal.SessionBuilder(store, user2Address);
 
-  var user2ToUser1Session = new signal.SessionBuilder(store, user1Address);
+  var user2ToUser1Session = new signal.SessionBuilder(store2, user1Address);
 
   const sesson1Config = {
     registrationId: user1.registrationId,
@@ -83,9 +103,6 @@ const init = async () => {
       publicKey: user1.preKey.keyPair.pubKey
     },
   }
-  console.log({
-    sesson1Config
-  })
   const sesson2Config = {
     registrationId: user2.registrationId,
     identityKey: user2.identityKeyPair.pubKey,
@@ -102,16 +119,25 @@ const init = async () => {
   console.log({
     sesson2Config
   })
+  await user1ToUser2Session.processPreKey(sesson1Config);
+
 
   await user2ToUser1Session.processPreKey(sesson2Config);
 
-  await user1ToUser2Session.processPreKey(sesson1Config);
+  //
+
+
+  console.log({
+    sesson1Config
+  })
+
+
 
   const user1ToUser2Ciphertext = await encryptMsg({
     msg: "whats if i hada chair",
     store,
-    user2Address
-  })
+    address: user2Address
+  }, 'uint32')
 
   console.log(user1ToUser2Ciphertext)
 
