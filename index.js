@@ -26,7 +26,7 @@ const generateSignedPreKey = (identityKeyPair, registrationId) => new Promise((r
 });
 const encryptMsg = async({msg, store, address}) => {
   var sessionCipher = new signal.SessionCipher(store, address);
-  const ciphertext = sessionCipher.encrypt(msg, 'uint32')
+  const ciphertext = sessionCipher.encrypt(msg)
   return ciphertext;
 }
 const str2ab = (str) => {
@@ -42,6 +42,8 @@ const registerClient = async(store) => {
   const registrationId = KeyHelper.generateRegistrationId();
   const identityKeyPair = await generateIdentityKeyPair();
   store.put('identityKey', identityKeyPair);
+  store.put('registrationId', registrationId);
+
 
   const preKey = await generatePreKey(registrationId);
   store.storePreKey(preKey.keyId, preKey.keyPair);
