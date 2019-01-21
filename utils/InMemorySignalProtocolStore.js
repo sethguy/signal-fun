@@ -1,4 +1,11 @@
 var signal = require('signal-protocol')
+var dcodeIO = require('../node_modules/signal-protocol/build/dcodeIO.js');
+const toString = function(thing) {
+  if (typeof thing == 'string') {
+      return thing;
+  }
+  return new dcodeIO.ByteBuffer.wrap(thing).toString('binary');
+}
 
 function SignalProtocolStore() {
   this.store = {};
@@ -47,7 +54,7 @@ SignalProtocolStore.prototype = {
     if (trusted === undefined) {
       return Promise.resolve(true);
     }
-    return Promise.resolve(util.toString(identityKey) === util.toString(trusted));
+    return Promise.resolve(toString(identityKey) === toString(trusted));
   },
   loadIdentityKey: function(identifier) {
     if (identifier === null || identifier === undefined)
@@ -62,7 +69,7 @@ SignalProtocolStore.prototype = {
     var existing = this.get('identityKey' + address.getName());
     this.put('identityKey' + address.getName(), identityKey)
 
-    if (existing && util.toString(identityKey) !== util.toString(existing)) {
+    if (existing && toString(identityKey) !== toString(existing)) {
       return Promise.resolve(true);
     } else {
       return Promise.resolve(false);

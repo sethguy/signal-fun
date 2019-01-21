@@ -1,5 +1,4 @@
 var signal = require('signal-protocol')
-var dcodeIO = require('./node_modules/signal-protocol/build/dcodeIO.js');
 
 var KeyHelper = signal.KeyHelper;
 const SignalProtocolStore = require('./utils/InMemorySignalProtocolStore')
@@ -31,31 +30,24 @@ const encryptMsg = async({msg, store, address}) => {
 }
 const decryptNormalMsg = async({ciphertext, store, address}) => {
   var sessionCipher = new signal.SessionCipher(store, address);
-  const text = await sessionCipher.decryptWhisperMessage(ciphertext)
+  const decryptedBuffer = await sessionCipher.decryptWhisperMessage(ciphertext,'binary')
+  const text = String.fromCharCode.apply(null, new Uint8Array(decryptedBuffer))
   return text;
 }
 
 const decryptPreKeyWhisperlMsg = async({ciphertext, store, address}) => {
   var sessionCipher = new signal.SessionCipher(store, address);
-  const text = await sessionCipher.decryptPreKeyWhisperMessage(ciphertext)
+  const decryptedBuffer = await sessionCipher.decryptPreKeyWhisperMessage(ciphertext,'binary')
+  const text = String.fromCharCode.apply(null, new Uint8Array(decryptedBuffer))
   return text;
 }
 
-const str2ab = (str) => {
-  var buf = new ArrayBuffer(str.length * 2); // 2 bytes for each char
-  var bufView = new Uint32Array(buf);
-  for (var i = 0, strLen = str.length; i < strLen; i++) {
-    bufView[i] = str.charCodeAt(i);
-  }
-  return buf;
-}
 const registerClient = async(store) => {
   const deviceId = 1;
   const registrationId = KeyHelper.generateRegistrationId();
   const identityKeyPair = await generateIdentityKeyPair();
   store.put('identityKey', identityKeyPair);
   store.put('registrationId', registrationId);
-
 
   const preKey = await generatePreKey(registrationId);
   store.storePreKey(preKey.keyId, preKey.keyPair);
@@ -135,17 +127,11 @@ const init = async () => {
   })
   await user1ToUser2Session.processPreKey(sesson1Config);
 
-
   await user2ToUser1Session.processPreKey(sesson2Config);
-
-  //
-
 
   console.log({
     sesson1Config
   })
-
-
 
   const user1ToUser2Ciphertext = await encryptMsg({
     msg: "whats if i hada chair",
@@ -155,13 +141,13 @@ const init = async () => {
 
   console.log(user1ToUser2Ciphertext)
 
-
   const decrypted = await decryptPreKeyWhisperlMsg({
     ciphertext: user1ToUser2Ciphertext.body,
     store,
     address: user2Address
   })
-  console.log('decrypted',decrypted)
+
+  console.log('decrypted',decrypted )
 
 }
 
