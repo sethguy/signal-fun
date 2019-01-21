@@ -26,9 +26,21 @@ const generateSignedPreKey = (identityKeyPair, registrationId) => new Promise((r
 });
 const encryptMsg = async({msg, store, address}) => {
   var sessionCipher = new signal.SessionCipher(store, address);
-  const ciphertext = sessionCipher.encrypt(msg)
+  const ciphertext = await sessionCipher.encrypt(msg)
   return ciphertext;
 }
+const decryptNormalMsg = async({ciphertext, store, address}) => {
+  var sessionCipher = new signal.SessionCipher(store, address);
+  const text = await sessionCipher.decryptWhisperMessage(ciphertext)
+  return text;
+}
+
+const decryptPreKeyWhisperlMsg = async({ciphertext, store, address}) => {
+  var sessionCipher = new signal.SessionCipher(store, address);
+  const text = await sessionCipher.decryptPreKeyWhisperMessage(ciphertext)
+  return text;
+}
+
 const str2ab = (str) => {
   var buf = new ArrayBuffer(str.length * 2); // 2 bytes for each char
   var bufView = new Uint32Array(buf);
@@ -139,9 +151,17 @@ const init = async () => {
     msg: "whats if i hada chair",
     store,
     address: user2Address
-  }, 'uint32')
+  })
 
   console.log(user1ToUser2Ciphertext)
+
+
+  const decrypted = await decryptPreKeyWhisperlMsg({
+    ciphertext: user1ToUser2Ciphertext.body,
+    store,
+    address: user2Address
+  })
+  console.log('decrypted',decrypted)
 
 }
 
