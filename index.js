@@ -9,36 +9,43 @@ const myStore = {};
 const v4 = require('uuid').v4;
 
 const generateIdentityKeyPair = () => new Promise((resolve, reject) => {
-  KeyHelper.generateIdentityKeyPair().then(function(identityKeyPair) {
-    resolve(identityKeyPair)
-  });
+  KeyHelper
+    .generateIdentityKeyPair()
+    .then(function (identityKeyPair) {
+      resolve(identityKeyPair)
+    });
 });
 const generatePreKey = (registrationId) => new Promise((resolve, reject) => {
-  KeyHelper.generatePreKey(registrationId).then(function(preKey) {
-    resolve(preKey)
-  });
+  KeyHelper
+    .generatePreKey(registrationId)
+    .then(function (preKey) {
+      resolve(preKey)
+    });
 })
 const generateSignedPreKey = (identityKeyPair, registrationId) => new Promise((resolve, reject) => {
-  KeyHelper.generateSignedPreKey(identityKeyPair, registrationId).then(function(signedPreKey) {
-    resolve(signedPreKey)
-  });
+  KeyHelper
+    .generateSignedPreKey(identityKeyPair, registrationId)
+    .then(function (signedPreKey) {
+      resolve(signedPreKey)
+    });
 });
-const encryptMsg = async({msg, store, address}) => {
-  var sessionCipher = new signal.SessionCipher(store, address);
+const encryptMsg = async({msg, sessionCipher}) => {
   const ciphertext = await sessionCipher.encrypt(msg)
   return ciphertext;
 }
-const decryptNormalMsg = async({ciphertext, store, address}) => {
-  var sessionCipher = new signal.SessionCipher(store, address);
-  const decryptedBuffer = await sessionCipher.decryptWhisperMessage(ciphertext,'binary')
-  const text = String.fromCharCode.apply(null, new Uint8Array(decryptedBuffer))
+const decryptNormalMsg = async({ciphertext, sessionCipher}) => {
+  const decryptedBuffer = await sessionCipher.decryptWhisperMessage(ciphertext, 'binary')
+  const text = String
+    .fromCharCode
+    .apply(null, new Uint8Array(decryptedBuffer))
   return text;
 }
 
-const decryptPreKeyWhisperlMsg = async({ciphertext, store, address}) => {
-  var sessionCipher = new signal.SessionCipher(store, address);
-  const decryptedBuffer = await sessionCipher.decryptPreKeyWhisperMessage(ciphertext,'binary')
-  const text = String.fromCharCode.apply(null, new Uint8Array(decryptedBuffer))
+const decryptPreKeyWhisperlMsg = async({ciphertext, sessionCipher}) => {
+  const decryptedBuffer = await sessionCipher.decryptPreKeyWhisperMessage(ciphertext, 'binary')
+  const text = String
+    .fromCharCode
+    .apply(null, new Uint8Array(decryptedBuffer))
   return text;
 }
 
@@ -52,13 +59,7 @@ const registerClient = async(store) => {
   const preKey = await generatePreKey(registrationId);
   store.storePreKey(preKey.keyId, preKey.keyPair);
   const signedPreKey = await generateSignedPreKey(identityKeyPair, registrationId);
-  // console.log({
-  //   signedPreKey
-  // })
-
   store.storeSignedPreKey(signedPreKey.keyId, signedPreKey.keyPair);
-
-
 
   myStore[`${deviceId}-${registrationId}`] = {
     deviceId,
@@ -66,88 +67,65 @@ const registerClient = async(store) => {
     storeId: `${deviceId}-${registrationId}`,
     identityKeyPair,
     preKey,
-    signedPreKey,
+    signedPreKey
   };
 
-
-
-  return {
-    deviceId,
-    registrationId
-  };
+  return {deviceId, registrationId};
 };
-const init = async () => {
+
+const processPreKeyForUser = async(user, builder) => {
+
+  const sessonConfig = {
+    registrationId: user.registrationId,
+    identityKey: user.identityKeyPair.pubKey,
+    signedPreKey: {
+      keyId: user.signedPreKey.keyId,
+      publicKey: user.signedPreKey.keyPair.pubKey,
+      signature: user.signedPreKey.signature
+    },
+    preKey: {
+      keyId: user.preKey.keyId,
+      publicKey: user.preKey.keyPair.pubKey
+    }
+  }
+
+  await builder.processPreKey(sessonConfig);
+
+}
+
+const init = async() => {
   const user1Id = await registerClient(store);
   const user2Id = await registerClient(store2);
   const user1 = myStore[`${user1Id.deviceId}-${user1Id.registrationId}`]
   const user2 = myStore[`${user2Id.deviceId}-${user2Id.registrationId}`]
-  console.log({
-    user1,
-    user2,
-    myStore,
-  });
+  console.log({user1, user2, myStore});
+
   var user1Address = new signal.SignalProtocolAddress('33.1', user1.deviceId);
 
   var user2Address = new signal.SignalProtocolAddress('44.1', user2.deviceId);
 
-  //
+  var user1ToUser2SessionBuilder = new signal.SessionBuilder(store, user2Address);
 
-  var user1ToUser2Session = new signal.SessionBuilder(store, user2Address);
+  await processPreKeyForUser(user2, user1ToUser2SessionBuilder);
+  
+  var user1Session = new signal.SessionCipher(store, user2Address);
 
-  var user2ToUser1Session = new signal.SessionBuilder(store2, user1Address);
+  var user2Session = new signal.SessionCipher(store2, user1Address);
 
-  const sesson1Config = {
-    registrationId: user1.registrationId,
-    identityKey: user1.identityKeyPair.pubKey,
-    signedPreKey: {
-      keyId: user1.signedPreKey.keyId,
-      publicKey: user1.signedPreKey.keyPair.pubKey,
-      signature: user1.signedPreKey.signature,
-    },
-    preKey: {
-      keyId: user1.preKey.keyId,
-      publicKey: user1.preKey.keyPair.pubKey
-    },
-  }
-  const sesson2Config = {
-    registrationId: user2.registrationId,
-    identityKey: user2.identityKeyPair.pubKey,
-    signedPreKey: {
-      keyId: user2.signedPreKey.keyId,
-      publicKey: user2.signedPreKey.keyPair.pubKey,
-      signature: user2.signedPreKey.signature,
-    },
-    preKey: {
-      keyId: user2.preKey.keyId,
-      publicKey: user2.preKey.keyPair.pubKey
-    },
-  }
-  console.log({
-    sesson2Config
-  })
-  await user1ToUser2Session.processPreKey(sesson1Config);
-
-  await user2ToUser1Session.processPreKey(sesson2Config);
-
-  console.log({
-    sesson1Config
-  })
-
-  const user1ToUser2Ciphertext = await encryptMsg({
-    msg: "whats if i hada chair",
-    store,
-    address: user2Address
-  })
+  const user1ToUser2Ciphertext = await encryptMsg({msg: "whats if i hada chair", sessionCipher: user1Session})
 
   console.log(user1ToUser2Ciphertext)
 
-  const decrypted = await decryptPreKeyWhisperlMsg({
-    ciphertext: user1ToUser2Ciphertext.body,
-    store,
-    address: user2Address
-  })
+  const decrypted = await decryptPreKeyWhisperlMsg({ciphertext: user1ToUser2Ciphertext.body, sessionCipher: user2Session})
 
-  console.log('decrypted',decrypted )
+  console.log('decrypted', decrypted)
+
+  const user2ToUser1Ciphertext = await encryptMsg({msg: "i gues you coud sit", sessionCipher: user2Session})
+  console.log('TCL: init -> user2ToUser1Ciphertext', user2ToUser1Ciphertext)
+
+  const decrypted2 = await decryptNormalMsg({ciphertext: user2ToUser1Ciphertext.body, sessionCipher: user1Session})
+
+  console.log('decrypted2', decrypted2)
 
 }
 
