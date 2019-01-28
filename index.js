@@ -69,24 +69,18 @@ const registerClient = async(store) => {
     preKey,
     signedPreKey
   };
-
   var address = new signal.SignalProtocolAddress(`${registrationId}.1`, deviceId);
+  const bundle = await generatePreKeyBundle(store, await store.getLocalRegistrationId())
 
-  return {deviceId, registrationId, address};
+  return {deviceId, registrationId, address,bundle};
 };
 
 const onEncrypted = (ciphertextPack, sessionCipher) => {
-
   if (ciphertextPack.type === 1) {
-
     return decryptNormalMsg({ciphertext: ciphertextPack.body, sessionCipher: sessionCipher});
-
   } else {
-
     return decryptPreKeyWhisperlMsg({ciphertext: ciphertextPack.body, sessionCipher: sessionCipher});
-
   }
-
 }
 
 const init = async() => {
@@ -95,11 +89,9 @@ const init = async() => {
 
   const user2Id = await registerClient(store2);
 
-  var user1ToUser2SessionBuilder = new signal.SessionBuilder(store, user2Id.address);
+  var user1InitSessionBuilder = new signal.SessionBuilder(store, user2Id.address);
 
-  const bundle = await generatePreKeyBundle(store2, await store2.getLocalRegistrationId())
-
-  await user1ToUser2SessionBuilder.processPreKey(bundle);
+  await user1InitSessionBuilder.processPreKey(user2Id.bundle);
 
   var user1Session = new signal.SessionCipher(store, user2Id.address);
 
