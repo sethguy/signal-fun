@@ -72,8 +72,22 @@ const registerClient = async(store) => {
 
   var address = new signal.SignalProtocolAddress(`${registrationId}.1`, deviceId);
 
-  return {deviceId, registrationId,address};
+  return {deviceId, registrationId, address};
 };
+
+const onEncrypted = (ciphertextPack, sessionCipher) => {
+
+  if (ciphertextPack.type === 1) {
+
+    return decryptNormalMsg({ciphertext: ciphertextPack.body, sessionCipher: sessionCipher});
+
+  } else {
+
+    return decryptPreKeyWhisperlMsg({ciphertext: ciphertextPack.body, sessionCipher: sessionCipher});
+
+  }
+
+}
 
 const init = async() => {
 
@@ -89,19 +103,17 @@ const init = async() => {
 
   var user1Session = new signal.SessionCipher(store, user2Id.address);
 
-  var user2Session = new signal.SessionCipher(store2, user1Id.address);
-
   const user1ToUser2Ciphertext = await encryptMsg({msg: "whats if i hada chair", sessionCipher: user1Session});
 
-  console.log('user1ToUser2Ciphertext', user1ToUser2Ciphertext);
+  var user2Session = new signal.SessionCipher(store2, user1Id.address);
 
-  const decrypted = await decryptPreKeyWhisperlMsg({ciphertext: user1ToUser2Ciphertext.body, sessionCipher: user2Session});
+  const decrypted = await onEncrypted( user1ToUser2Ciphertext, user2Session);
 
   console.log('decrypted', decrypted);
 
   const user2ToUser1Ciphertext = await encryptMsg({msg: "i gues you coud sit", sessionCipher: user2Session});
 
-  const decrypted2 = await decryptNormalMsg({ciphertext: user2ToUser1Ciphertext.body, sessionCipher: user1Session});
+  const decrypted2 = await onEncrypted( user2ToUser1Ciphertext, user1Session);
 
   console.log('decrypted2', decrypted2);
 
