@@ -110,28 +110,57 @@ const str2ab = (str) => {
   return buf;
 }
 
+const bundle64 = (bundle) => {
+
+  const {identityKey, signedPreKey, preKey,...bundleData} = bundle;
+
+  const identityKey64 = btoa(ab2str(identityKey));
+  const signedPreKey64 = {
+    ...signedPreKey,
+    publicKey: btoa(ab2str(signedPreKey.publicKey)),
+    signature: btoa(ab2str(signedPreKey.signature))
+  }
+
+  const preKey64 = {
+    ...preKey,
+    publicKey: btoa(ab2str(preKey.publicKey))
+  }
+
+  return {
+    ...bundleData,
+    identityKey64,
+    signedPreKey64,
+    preKey64
+  }
+
+}
+
+const convertbundle64 = (bundle64) => {
+
+  const {identityKey64, signedPreKey64, preKey64,...bundleData} = bundle64;
+
+  const identityKey = str2ab(atob(identityKey64));
+  const signedPreKey = {
+    ...signedPreKey64,
+    publicKey: str2ab(atob(signedPreKey64.publicKey)),
+    signature: str2ab(atob(signedPreKey64.signature))
+  }
+
+  const preKey = {
+    ...preKey64,
+    publicKey: str2ab(atob(preKey64.publicKey))
+  }
+
+  return {
+    ...bundleData,
+    identityKey,
+    signedPreKey,
+    preKey
+  }
+
+}
+
 const initUserJetson = async({deviceId, registrationId, bundle, userId}) => {
-	console.log('TCL: {deviceId, registrationId, bundle, userId}', {deviceId, registrationId, bundle, userId})
-  // console.log('TCL: initUserJetson -> {deviceId, registrationId,
-  // bundle,userId}', {deviceId, registrationId, bundle,userId})
-  // console.log( "1", ab2str(bundle.identityKey) )
-
-  // const string1 = ab2str(bundle.identityKey);
-
-  
-  // const base64 = btoa(string1)
-	// console.log('TCL: base64', base64)
-  
-  // const bdecode = atob(base64)
-
-	// console.log('TCL: bdecode', bdecode)
-
-
-  // console.log("2", ab2str(str2ab(ab2str(bundle.identityKey)))  )
-
-  // await firebase   .firestore()   .collection('jetson')   .add({deviceId,
-  // registrationId, bundle,userId});
-
 }
 const init = async() => {
 
