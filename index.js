@@ -87,8 +87,10 @@ const init = async() => {
 
   const user1Id = await registerClient(store);
 
+  //
   const user2Id = await registerClient(store2);
 
+  //
   var user1InitSessionBuilder = new signal.SessionBuilder(store, user2Id.address);
 
   await user1InitSessionBuilder.processPreKey(user2Id.bundle);
@@ -97,6 +99,7 @@ const init = async() => {
 
   const user1ToUser2Ciphertext = await encryptMsg({msg: "whats if i hada chair", sessionCipher: user1Session});
 
+  //
   var user2Session = new signal.SessionCipher(store2, user1Id.address);
 
   const decrypted = await onEncrypted( user1ToUser2Ciphertext, user2Session);
@@ -105,6 +108,7 @@ const init = async() => {
 
   const user2ToUser1Ciphertext = await encryptMsg({msg: "i gues you coud sit", sessionCipher: user2Session});
 
+  //
   const decrypted2 = await onEncrypted( user2ToUser1Ciphertext, user1Session);
 
   console.log('decrypted2', decrypted2);
