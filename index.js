@@ -1,5 +1,17 @@
 var signal = require('signal-protocol')
 
+var firebase = require('firebase')
+
+var config = {
+  apiKey: "AIzaSyAgRn4rnja4ux7wOpQ9nfqUAqJXTRVayho",
+  authDomain: "project-jetta.firebaseapp.com",
+  databaseURL: "https://project-jetta.firebaseio.com",
+  projectId: "project-jetta",
+  storageBucket: "project-jetta.appspot.com",
+  messagingSenderId: "217223507027"
+};
+firebase.initializeApp(config);
+
 var KeyHelper = signal.KeyHelper;
 const SignalProtocolStore = require('./utils/InMemorySignalProtocolStore')
 const store = new SignalProtocolStore();
@@ -72,7 +84,7 @@ const registerClient = async(store) => {
   var address = new signal.SignalProtocolAddress(`${registrationId}.1`, deviceId);
   const bundle = await generatePreKeyBundle(store, await store.getLocalRegistrationId())
 
-  return {deviceId, registrationId, address,bundle};
+  return {deviceId, registrationId, address, bundle};
 };
 
 const onEncrypted = (ciphertextPack, sessionCipher) => {
@@ -83,12 +95,60 @@ const onEncrypted = (ciphertextPack, sessionCipher) => {
   }
 }
 
+const ab2str = (buf) => {
+  return String
+    .fromCharCode
+    .apply(null, new Uint8Array(buf));
+}
+
+const str2ab = (str) => {
+  var buf = new ArrayBuffer(str.length); // 2 bytes for each char
+  var bufView = new Uint8Array(buf);
+  for (var i = 0, strLen = str.length; i < strLen; i++) {
+    bufView[i] = str.charCodeAt(i);
+  }
+  return buf;
+}
+
+const initUserJetson = async({deviceId, registrationId, bundle, userId}) => {
+	console.log('TCL: {deviceId, registrationId, bundle, userId}', {deviceId, registrationId, bundle, userId})
+  // console.log('TCL: initUserJetson -> {deviceId, registrationId,
+  // bundle,userId}', {deviceId, registrationId, bundle,userId})
+  // console.log( "1", ab2str(bundle.identityKey) )
+
+  // const string1 = ab2str(bundle.identityKey);
+
+  
+  // const base64 = btoa(string1)
+	// console.log('TCL: base64', base64)
+  
+  // const bdecode = atob(base64)
+
+	// console.log('TCL: bdecode', bdecode)
+
+
+  // console.log("2", ab2str(str2ab(ab2str(bundle.identityKey)))  )
+
+  // await firebase   .firestore()   .collection('jetson')   .add({deviceId,
+  // registrationId, bundle,userId});
+
+}
 const init = async() => {
 
   const user1Id = await registerClient(store);
+  const user1 = await initUserJetson({
+    ...user1Id,
+    userId: "user1"
+  });
+
+  console.log('user1', user1)
 
   //
   const user2Id = await registerClient(store2);
+  const user2 = await initUserJetson({
+    ...user2Id,
+    userId: "user2"
+  });
 
   //
   var user1InitSessionBuilder = new signal.SessionBuilder(store, user2Id.address);
@@ -102,14 +162,14 @@ const init = async() => {
   //
   var user2Session = new signal.SessionCipher(store2, user1Id.address);
 
-  const decrypted = await onEncrypted( user1ToUser2Ciphertext, user2Session);
+  const decrypted = await onEncrypted(user1ToUser2Ciphertext, user2Session);
 
   console.log('decrypted', decrypted);
 
   const user2ToUser1Ciphertext = await encryptMsg({msg: "i gues you coud sit", sessionCipher: user2Session});
 
   //
-  const decrypted2 = await onEncrypted( user2ToUser1Ciphertext, user1Session);
+  const decrypted2 = await onEncrypted(user2ToUser1Ciphertext, user1Session);
 
   console.log('decrypted2', decrypted2);
 
