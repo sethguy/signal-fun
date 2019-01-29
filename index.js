@@ -112,7 +112,12 @@ const str2ab = (str) => {
 
 const bundle64 = (bundle) => {
 
-  const {identityKey, signedPreKey, preKey,...bundleData} = bundle;
+  const {
+    identityKey,
+    signedPreKey,
+    preKey,
+    ...bundleData
+  } = bundle;
 
   const identityKey64 = btoa(ab2str(identityKey));
   const signedPreKey64 = {
@@ -137,7 +142,12 @@ const bundle64 = (bundle) => {
 
 const convertbundle64 = (bundle64) => {
 
-  const {identityKey64, signedPreKey64, preKey64,...bundleData} = bundle64;
+  const {
+    identityKey64,
+    signedPreKey64,
+    preKey64,
+    ...bundleData
+  } = bundle64;
 
   const identityKey = str2ab(atob(identityKey64));
   const signedPreKey = {
@@ -161,6 +171,16 @@ const convertbundle64 = (bundle64) => {
 }
 
 const initUserJetson = async({deviceId, registrationId, bundle, userId}) => {
+
+  const b64 = bundle64(bundle);
+
+  await firebase
+    .firestore()
+    .collection('jetson')
+    .add({userId, deviceId, registrationId, bundle64: b64})
+
+    console.log({b64})
+
 }
 const init = async() => {
 
