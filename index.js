@@ -171,17 +171,34 @@ const convertbundle64 = (bundle64) => {
 }
 
 const initUserJetson = async({deviceId, registrationId, bundle, userId}) => {
-
   const b64 = bundle64(bundle);
-
   await firebase
     .firestore()
     .collection('jetson')
-    .add({userId, deviceId, registrationId, bundle64: b64})
+    .add({
+      created: new Date().getTime(),
+      userId,
+      deviceId,
+      registrationId,
+      bundle64: b64
+    });
+  console.log({b64});
+};
 
-    console.log({b64})
+const getlatestBundleAndAddress = (userId) => {
+  const jetsonRef = firebase
+    .firestore()
+    .collection('jetson');
 
+  const query = jetsonRef
+  .where('userId', '==', userId)
+
+    .orderBy('created')
+    .limit(1)
+
+  return query.get();
 }
+
 const init = async() => {
 
   const user1Id = await registerClient(store);
@@ -190,8 +207,6 @@ const init = async() => {
     userId: "user1"
   });
 
-  console.log('user1', user1)
-
   //
   const user2Id = await registerClient(store2);
   const user2 = await initUserJetson({
@@ -199,7 +214,10 @@ const init = async() => {
     userId: "user2"
   });
 
-  //
+  const results = await getlatestBundleAndAddress('user1');
+
+  console.log('TCL: init -> results', results);
+
   var user1InitSessionBuilder = new signal.SessionBuilder(store, user2Id.address);
 
   await user1InitSessionBuilder.processPreKey(user2Id.bundle);
