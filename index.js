@@ -4,28 +4,19 @@ const SignalProtocolStore = require('./utils/InMemorySignalProtocolStore')
 const store = new SignalProtocolStore();
 const store2 = new SignalProtocolStore();
 
-const v4 = require('uuid').v4;
 
 const {encryptMsg, onEncrypted} = require('./messaging')
 
-const {registerClient, initUserJetson} = require('./clientRegistration')
+const { initClient} = require('./clientRegistration')
 
 const {getlatestAndConvertbundle} = require('./bundleUtils')
 const init = async() => {
 
-  const user1Client = await registerClient(store);
-  await initUserJetson({
-    ...user1Client,
-    userId: "user1"
-  });
+  await initClient("user1",store);
   const user1Cloud = await getlatestAndConvertbundle('user1')
 
-  //
-  const user2Client = await registerClient(store2);
-  await initUserJetson({
-    ...user2Client,
-    userId: "user2"
-  });
+  await initClient("user2",store2);
+
   const user2Cloud = await getlatestAndConvertbundle('user2')
 
   console.log('TCL: init -> user2Cloud', user2Cloud)

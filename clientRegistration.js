@@ -7,6 +7,22 @@ const {generateIdentityKeyPair, generateSignedPreKey, generatePreKey} = require(
 
 const { bundle64} = require('./bundleUtils')
 
+const v4 = require('uuid').v4;
+
+
+const initClient = async(userId,store) =>{
+  const id = userId || v4();
+  const clientData = await registerClient(store);
+  await initUserJetson({
+    ...clientData,
+    userId: id
+  });
+  return {
+    ...clientData,
+    userId: id
+  }
+}
+
 const initUserJetson = async({deviceId, registrationId, bundle, userId}) => {
     const b64 = bundle64(bundle);
     await firebase
@@ -77,6 +93,5 @@ const generatePreKeyBundle = (store, registrationId) => {
   }
 
 module.exports = {
-    initUserJetson,
-    registerClient
+  initClient
 }
