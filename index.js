@@ -185,49 +185,81 @@ const initUserJetson = async({deviceId, registrationId, bundle, userId}) => {
   console.log({b64});
 };
 
-const getlatestBundleAndAddress = (userId) => {
+const getlatestBundle = async(userId) => {
+
   const jetsonRef = firebase
     .firestore()
     .collection('jetson');
 
   const query = jetsonRef
-  .where('userId', '==', userId)
-
-    .orderBy('created')
+    .where('userId', '==', userId)
+    .orderBy('created', 'desc')
     .limit(1)
 
-  return query.get();
+  const {docs} = await query.get();
+
+  const [one] = docs
+
+  const latestSes = {
+    id: one.id,
+    ...one.data()
+  }
+
+  return latestSes;
+}
+
+const getlatestAndConvertbundle = async(userId) => {
+
+  const latestSes = await getlatestBundle(userId);
+
+  const {
+    bundle64,
+    deviceId,
+    registrationId,
+    ...sesData
+  } = latestSes;
+
+  const bundle = convertbundle64(bundle64);
+  var address = new signal.SignalProtocolAddress(`${registrationId}.1`, deviceId);
+
+  return {
+    address,
+    bundle,
+    deviceId,
+    registrationId,
+    ...sesData
+  };
 }
 
 const init = async() => {
 
-  const user1Id = await registerClient(store);
-  const user1 = await initUserJetson({
-    ...user1Id,
+  const user1Client = await registerClient(store);
+  await initUserJetson({
+    ...user1Client,
     userId: "user1"
   });
+  const user1Cloud = await getlatestAndConvertbundle('user1')
 
   //
-  const user2Id = await registerClient(store2);
-  const user2 = await initUserJetson({
-    ...user2Id,
+  const user2Client = await registerClient(store2);
+  await initUserJetson({
+    ...user2Client,
     userId: "user2"
   });
+  const user2Cloud = await getlatestAndConvertbundle('user2')
 
-  const results = await getlatestBundleAndAddress('user1');
+  console.log('TCL: init -> user2Cloud', user2Cloud)
 
-  console.log('TCL: init -> results', results);
+  var user1InitSessionBuilder = new signal.SessionBuilder(store, user2Cloud.address);
 
-  var user1InitSessionBuilder = new signal.SessionBuilder(store, user2Id.address);
+  await user1InitSessionBuilder.processPreKey(user2Cloud.bundle);
 
-  await user1InitSessionBuilder.processPreKey(user2Id.bundle);
-
-  var user1Session = new signal.SessionCipher(store, user2Id.address);
+  var user1Session = new signal.SessionCipher(store, user2Cloud.address);
 
   const user1ToUser2Ciphertext = await encryptMsg({msg: "whats if i hada chair", sessionCipher: user1Session});
 
   //
-  var user2Session = new signal.SessionCipher(store2, user1Id.address);
+  var user2Session = new signal.SessionCipher(store2, user1Cloud.address);
 
   const decrypted = await onEncrypted(user1ToUser2Ciphertext, user2Session);
 
