@@ -88,7 +88,7 @@ const getlatestBundle = async(userId) => {
 
     const {docs} = await query.get();
 
-    const [one] = docs
+    const [one] = docs;
 
     const latestSes = {
         id: one.id,

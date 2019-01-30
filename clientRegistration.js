@@ -28,7 +28,8 @@ const initUserJetson = async({deviceId, registrationId, bundle, userId}) => {
     await firebase
         .firestore()
         .collection('jetson')
-        .add({
+        .doc(`${deviceId}-${userId}`)
+        .set({
             created: new Date().getTime(),
             userId,
             deviceId,

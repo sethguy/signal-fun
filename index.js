@@ -4,18 +4,17 @@ const SignalProtocolStore = require('./utils/InMemorySignalProtocolStore')
 const store = new SignalProtocolStore();
 const store2 = new SignalProtocolStore();
 
-
 const {encryptMsg, onEncrypted} = require('./messaging')
 
-const { initClient} = require('./clientRegistration')
+const {initClient} = require('./clientRegistration')
 
 const {getlatestAndConvertbundle} = require('./bundleUtils')
 const init = async() => {
 
-  await initClient("user1",store);
+  await initClient("user1", store);
   const user1Cloud = await getlatestAndConvertbundle('user1')
 
-  await initClient("user2",store2);
+  await initClient("user2", store2);
 
   const user2Cloud = await getlatestAndConvertbundle('user2')
 
@@ -46,4 +45,3 @@ const init = async() => {
 }
 
 init();
-
